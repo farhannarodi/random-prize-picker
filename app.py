@@ -37,23 +37,5 @@ prize_count = st.number_input(
 st.divider()
 st.subheader("🏷️ Prize Names")
 
-# Prize name inputs
 prize_names = []
 for i in range(prize_count):
-    name = st.text_input(
-        f"Prize {i + 1} name",
-        value=f"Prize {i + 1}"
-    )
-    prize_names.append(name)
-
-# Validation
-valid = prize_count <= (end_range - start_range + 1)
-
-if not valid:
-    st.error("❌ Number of prizes exceeds available numbers")
-else:
-    if st.button("🎲 Proceed to Draw", use_container_width=True):
-        st.session_state["start"] = start_range
-        st.session_state["end"] = end_range
-        st.session_state["prizes"] = prize_names
-        st.switch_page("pages/2_🎁_Draw_Results.py")

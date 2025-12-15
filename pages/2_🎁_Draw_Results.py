@@ -11,35 +11,46 @@ st.set_page_config(
 
 st.title("🎁 Prize Draw Results")
 
-# --- Initialize session state only once ---
+# --- Initialize session state ---
+
+# The numbers range should have been input by the user on first page
 if "available_numbers" not in st.session_state:
-    st.session_state["available_numbers"] = list(range(1, 51))
+    st.error("Number range not found! Please go back and input the number range.")
+    st.stop()
+
+# Prizes list should be input by user, now supporting up to 1,000 prizes
 if "available_prizes" not in st.session_state:
-    st.session_state["available_prizes"] = ["Prize " + str(i) for i in range(1, 21)]
+    st.error("Prize list not found! Please go back and input prizes.")
+    st.stop()
+
+# Used prize-number pairs
 if "used_pairs" not in st.session_state:
-    st.session_state["used_pairs"] = []  # Stores tuples (prize, number)
+    st.session_state["used_pairs"] = []  # tuples (prize, number)
+
+# Current batch draw
 if "current_draw" not in st.session_state:
     st.session_state["current_draw"] = []
 
 # --- Buttons ---
 col_top = st.columns([1, 1])
 
-# Left column: Draw Next Batch
+# Draw Next Batch
 with col_top[0]:
     if st.session_state["available_prizes"] and st.session_state["available_numbers"]:
         if st.button("🎉 Draw Next Batch", use_container_width=True):
+            # Draw up to 5 prizes per batch
             batch_size = min(5, len(st.session_state["available_prizes"]))
             prizes_to_draw = st.session_state["available_prizes"][:batch_size]
             numbers_to_draw = random.sample(st.session_state["available_numbers"], batch_size)
 
-            # Current draw batch
+            # Pair prizes with numbers for current batch
             st.session_state["current_draw"] = list(zip(prizes_to_draw, numbers_to_draw))
 
-            # Remove drawn prizes and numbers
+            # Remove drawn prizes and numbers from available lists
             st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
             for prize, number in st.session_state["current_draw"]:
                 st.session_state["available_numbers"].remove(number)
-                st.session_state["used_pairs"].append((prize, number))  # save pair
+                st.session_state["used_pairs"].append((prize, number))
 
             st.balloons()
     else:
@@ -60,23 +71,26 @@ with col_top[0]:
             unsafe_allow_html=True
         )
 
-# Right column: New Session
+# New Session
 with col_top[1]:
     if st.button("🆕 New Session", use_container_width=True):
-        st.session_state["available_numbers"] = list(range(1, 51))
-        st.session_state["available_prizes"] = ["Prize " + str(i) for i in range(1, 21)]
+        # Reset using the user input (should redirect user to first page to input prizes & numbers)
+        if "original_numbers" in st.session_state:
+            st.session_state["available_numbers"] = st.session_state["original_numbers"][:]
+        if "original_prizes" in st.session_state:
+            st.session_state["available_prizes"] = st.session_state["original_prizes"][:]
         st.session_state["used_pairs"] = []
         st.session_state["current_draw"] = []
         st.rerun()
 
-# --- Session Info (after draw) ---
+# --- Session Info ---
 remaining_prizes = len(st.session_state["available_prizes"])
 st.markdown(f"""
 ### 🧾 Session Info
 - **Remaining Prizes:** {remaining_prizes}
 """)
 
-# --- Function to render cards ---
+# --- Card Renderer ---
 def render_card(title, value, color="#1E88E5", font_size=32):
     return f"""
     <div style="
@@ -102,7 +116,6 @@ def render_card(title, value, color="#1E88E5", font_size=32):
 if st.session_state["current_draw"]:
     st.markdown("---")
     st.subheader("🏆 Current Draw")
-
     items = st.session_state["current_draw"]
     cols = st.columns(5, gap="medium")
     for c, (prize, number) in enumerate(items):
@@ -113,7 +126,6 @@ if st.session_state["current_draw"]:
 if st.session_state["used_pairs"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")
-
     used = st.session_state["used_pairs"]
     rows = math.ceil(len(used)/10)
     for r in range(rows):

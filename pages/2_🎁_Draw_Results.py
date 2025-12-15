@@ -64,7 +64,8 @@ with col_top[0]:
                 drawn = random.sample(available, len(prize_names))
                 for n in drawn:
                     available.remove(n)
-                st.session_state["used_numbers"].extend(drawn)
+                    st.session_state["used_numbers"].append(n)
+                # Store paired prize-number results
                 st.session_state["results"] = dict(zip(prize_names, drawn))
                 st.balloons()
 
@@ -87,7 +88,7 @@ def render_card(title, value, color="#4CAF50", font_size=32):
         text-align:center;
         color:white;
         box-shadow:0 4px 12px rgba(0,0,0,0.15);
-        min-height:130px;
+        min-height:140px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         margin-bottom:12px;
         display:flex;
@@ -99,7 +100,7 @@ def render_card(title, value, color="#4CAF50", font_size=32):
     </div>
     """
 
-# DRAW RESULTS (5 per row)
+# DRAW RESULTS (Paired prizes + numbers, max 5 per row)
 if "results" in st.session_state and st.session_state["results"]:
     st.markdown("---")
     st.subheader("🏆 Draw Results")
@@ -113,7 +114,7 @@ if "results" in st.session_state and st.session_state["results"]:
             with cols[c]:
                 st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
 
-# USED NUMBERS (10 per row, soft red)
+# USED NUMBERS (rows of 10, soft red)
 if st.session_state["used_numbers"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")

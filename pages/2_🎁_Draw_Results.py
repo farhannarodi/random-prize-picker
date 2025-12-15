@@ -58,18 +58,21 @@ with col1:
             batch_prizes = []
 
             # 1️⃣ Draw returned prizes first (dynamic batch size)
+            returned_flag = {}  # track which items were returned
             if has_returned:
                 for item in st.session_state["used_pairs"]:
                     if item["returned"]:
                         batch_prizes.append(item)
+                        returned_flag[item["prize"]] = True
                         item["returned"] = False
-                        item["number"] = None
+                        item["number"] = None  # will assign new number
 
             # 2️⃣ Draw up to 5 new prizes if no returned prizes
             elif has_available:
                 for _ in range(min(5, len(st.session_state["available_prizes"]))):
                     prize_name = st.session_state["available_prizes"].pop(0)
                     batch_prizes.append({"prize": prize_name, "number": None, "returned": False})
+                    returned_flag[prize_name] = False
 
             # 3️⃣ Assign random numbers
             if len(st.session_state["available_numbers"]) < len(batch_prizes):
@@ -82,6 +85,10 @@ with col1:
                 st.session_state["available_numbers"].remove(num)
                 if item not in st.session_state["used_pairs"]:
                     st.session_state["used_pairs"].append(item)
+
+            # Store returned flag in current draw for highlighting
+            for item in batch_prizes:
+                item["was_returned"] = returned_flag.get(item["prize"], False)
 
             st.session_state["current_draw"] = batch_prizes
             st.balloons()
@@ -120,8 +127,9 @@ if st.session_state["current_draw"]:
     for i, item in enumerate(st.session_state["current_draw"]):
         prize = item["prize"]
         number = item["number"]
+        color = "#FF9800" if item.get("was_returned") else "#1E88E5"
         with cols[i]:
-            st.markdown(render_card(prize, number, "#1E88E5", 34), unsafe_allow_html=True)
+            st.markdown(render_card(prize, number, color, 34), unsafe_allow_html=True)
 
 # -----------------------
 # Numbers Already Drawn (clickable, rows of 10)
@@ -130,7 +138,6 @@ if st.session_state["used_pairs"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")
 
-    # Sort: active first, returned last
     used_sorted = sorted(st.session_state["used_pairs"], key=lambda x: x["returned"])
     rows = math.ceil(len(used_sorted) / 10)
 

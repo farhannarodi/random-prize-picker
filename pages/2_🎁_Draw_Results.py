@@ -1,6 +1,7 @@
 import streamlit as st
 import random
 import math
+from streamlit_autorefresh import st_autorefresh
 
 # Fullscreen / Wide layout
 st.set_page_config(
@@ -9,14 +10,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Auto-refresh every 5 seconds in presenter mode
+# Initialize presenter mode flag
 if "presenter_mode" not in st.session_state:
     st.session_state["presenter_mode"] = False
 
+# Auto-refresh in presenter mode
 if st.session_state["presenter_mode"]:
-    st_autorefresh = st.experimental_rerun()  # triggers page refresh
-    st.experimental_set_query_params(refresh="true")
-    st.experimental_singleton.clear()  # optional: clear singleton caches
+    st_autorefresh(interval=5000, key="auto_refresh")  # every 5 seconds
 
 st.title("🎁 Prize Draw Results")
 
@@ -70,12 +70,10 @@ if not st.session_state["presenter_mode"]:
         st.session_state["presenter_mode"] = True
         st.rerun()
 else:
+    # Exit presenter mode
     if st.button("🔙 Exit Presenter Mode", use_container_width=True):
         st.session_state["presenter_mode"] = False
         st.rerun()
-    # Auto-refresh every 5 seconds in presenter mode
-    st.experimental_set_query_params(auto_refresh="true")
-    st_autorefresh = st.experimental_rerun()
 
 # Trigger confetti only once per new draw
 if "confetti" in st.session_state and st.session_state["confetti"]:

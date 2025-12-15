@@ -49,27 +49,29 @@ def render_card(title, value, color, font_size, tooltip=None):
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.session_state["available_prizes"] or any(p["returned"] for p in st.session_state["used_pairs"]):
+    has_returned = any(p["returned"] for p in st.session_state["used_pairs"])
+    has_available = len(st.session_state["available_prizes"]) > 0
+
+    if has_returned or has_available:
         if st.button("🎉 Draw Next Batch", use_container_width=True):
 
-            batch_size = 5
             batch_prizes = []
 
-            # 1️⃣ Pull returned prizes first
-            for item in st.session_state["used_pairs"]:
-                if item["returned"] and len(batch_prizes) < batch_size:
-                    batch_prizes.append(item)
-                    item["returned"] = False
-                    item["number"] = None  # will assign new number
+            # 1️⃣ Draw returned prizes first (dynamic batch size)
+            if has_returned:
+                for item in st.session_state["used_pairs"]:
+                    if item["returned"]:
+                        batch_prizes.append(item)
+                        item["returned"] = False
+                        item["number"] = None
 
-            # 2️⃣ Fill remaining batch from available prizes
-            remaining_slots = batch_size - len(batch_prizes)
-            for _ in range(remaining_slots):
-                if st.session_state["available_prizes"]:
+            # 2️⃣ Draw up to 5 new prizes if no returned prizes
+            elif has_available:
+                for _ in range(min(5, len(st.session_state["available_prizes"]))):
                     prize_name = st.session_state["available_prizes"].pop(0)
                     batch_prizes.append({"prize": prize_name, "number": None, "returned": False})
 
-            # 3️⃣ Assign random numbers from available_numbers
+            # 3️⃣ Assign random numbers
             if len(st.session_state["available_numbers"]) < len(batch_prizes):
                 st.error("Not enough numbers left for this batch.")
                 st.stop()
@@ -78,7 +80,6 @@ with col1:
             for item, num in zip(batch_prizes, batch_numbers):
                 item["number"] = num
                 st.session_state["available_numbers"].remove(num)
-                # Add to used_pairs if not already in list
                 if item not in st.session_state["used_pairs"]:
                     st.session_state["used_pairs"].append(item)
 
@@ -108,13 +109,14 @@ remaining_prizes = len(st.session_state["available_prizes"]) + sum(p["returned"]
 st.markdown(f"### 🧾 Session Info\n**Remaining Prizes:** {remaining_prizes}")
 
 # -----------------------
-# Current Draw (max 5)
+# Current Draw (dynamic)
 # -----------------------
 if st.session_state["current_draw"]:
     st.markdown("---")
     st.subheader("🏆 Current Draw")
 
-    cols = st.columns(5)
+    num_cols = max(len(st.session_state["current_draw"]), 1)
+    cols = st.columns(num_cols)
     for i, item in enumerate(st.session_state["current_draw"]):
         prize = item["prize"]
         number = item["number"]

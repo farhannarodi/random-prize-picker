@@ -22,6 +22,10 @@ if not all(k in st.session_state for k in required_keys):
     st.warning("Please start a session first.")
     st.stop()
 
+# Initialize pagination for draw results
+if "results_page" not in st.session_state:
+    st.session_state["results_page"] = 0
+
 start = st.session_state["start"]
 end = st.session_state["end"]
 prize_names = st.session_state["prizes"]
@@ -65,8 +69,8 @@ with col_top[0]:
                 for n in drawn:
                     available.remove(n)
                     st.session_state["used_numbers"].append(n)
-                # Store paired prize-number results
                 st.session_state["results"] = dict(zip(prize_names, drawn))
+                st.session_state["results_page"] = 0  # reset to first page
                 st.balloons()
 
 # Right column: New Session button
@@ -76,6 +80,7 @@ with col_top[1]:
         st.session_state["used_numbers"] = []
         st.session_state["session_number"] += 1
         st.session_state.pop("results", None)
+        st.session_state["results_page"] = 0
         st.rerun()
 
 # Function to render cards
@@ -100,19 +105,38 @@ def render_card(title, value, color="#4CAF50", font_size=32):
     </div>
     """
 
-# DRAW RESULTS (Paired prizes + numbers, max 5 per row)
+# DRAW RESULTS (5 per page)
 if "results" in st.session_state and st.session_state["results"]:
     st.markdown("---")
-    st.subheader("🏆 Draw Results")
+    st.subheader("🏆 Draw Results (Paginated)")
 
     items = list(st.session_state["results"].items())
-    rows = math.ceil(len(items) / 5)
+    total_results = len(items)
+    page = st.session_state["results_page"]
 
-    for r in range(rows):
-        cols = st.columns(5, gap="medium")
-        for c, (prize, number) in enumerate(items[r*5:(r+1)*5]):
-            with cols[c]:
-                st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
+    # Calculate which items to show
+    start_idx = page * 5
+    end_idx = min(start_idx + 5, total_results)
+    items_to_show = items[start_idx:end_idx]
+
+    cols = st.columns(5, gap="medium")
+    for c, (prize, number) in enumerate(items_to_show):
+        with cols[c]:
+            st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
+
+    # Pagination buttons
+    col_nav = st.columns(3)
+    with col_nav[0]:
+        if st.button("⬅️ Previous"):
+            if page > 0:
+                st.session_state["results_page"] -= 1
+                st.experimental_rerun()
+    with col_nav[2]:
+        if st.button("Next ➡️"):
+            if end_idx < total_results:
+                st.session_state["results_page"] += 1
+                st.experimental_rerun()
+    # Center column just empty for spacing
 
 # USED NUMBERS (rows of 10, soft red)
 if st.session_state["used_numbers"]:

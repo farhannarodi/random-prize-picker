@@ -13,19 +13,18 @@ st.title("🎁 Prize Draw Results")
 
 # Initialize session state if not present
 if "available_numbers" not in st.session_state:
-    st.session_state["available_numbers"] = list(range(1, 51))  # Example
+    st.session_state["available_numbers"] = list(range(1, 51))  # Example: 50 numbers
 if "available_prizes" not in st.session_state:
     st.session_state["available_prizes"] = ["Prize " + str(i) for i in range(1, 21)]
-if "drawn_results" not in st.session_state:
-    st.session_state["drawn_results"] = []  # List of tuples (prize, number)
 if "used_numbers" not in st.session_state:
     st.session_state["used_numbers"] = []
+if "current_draw" not in st.session_state:
+    st.session_state["current_draw"] = []  # List of tuples (prize, number)
 
 # Session info
 st.markdown(f"""
 ### 🧾 Session Info
 - **Remaining Prizes:** {len(st.session_state['available_prizes'])}
-- **Remaining Numbers:** {len(st.session_state['available_numbers'])}
 """)
 
 # Buttons
@@ -38,13 +37,15 @@ with col_top[0]:
             prizes_to_draw = st.session_state["available_prizes"][:batch_size]
             numbers_to_draw = random.sample(st.session_state["available_numbers"], batch_size)
 
-            # Pair them and store
-            for prize, number in zip(prizes_to_draw, numbers_to_draw):
-                st.session_state["drawn_results"].append((prize, number))
+            # Pair prizes with numbers and store current draw
+            st.session_state["current_draw"] = list(zip(prizes_to_draw, numbers_to_draw))
+
+            # Update used numbers and remove from available
+            for prize, number in st.session_state["current_draw"]:
                 st.session_state["used_numbers"].append(number)
                 st.session_state["available_numbers"].remove(number)
                 st.session_state["available_prizes"].remove(prize)
-            
+
             st.balloons()
     else:
         st.markdown(
@@ -68,8 +69,8 @@ with col_top[1]:
     if st.button("🆕 New Session", use_container_width=True):
         st.session_state["available_numbers"] = list(range(1, 51))
         st.session_state["available_prizes"] = ["Prize " + str(i) for i in range(1, 21)]
-        st.session_state["drawn_results"] = []
         st.session_state["used_numbers"] = []
+        st.session_state["current_draw"] = []
         st.rerun()
 
 # Function to render cards
@@ -94,22 +95,18 @@ def render_card(title, value, color="#1E88E5", font_size=32):
     </div>
     """
 
-# DRAW RESULTS (5 prizes per row)
-if st.session_state["drawn_results"]:
+# DRAW RESULTS (current draw only, max 5 per row)
+if st.session_state["current_draw"]:
     st.markdown("---")
-    st.subheader("🏆 Draw Results (Paired)")
+    st.subheader("🏆 Current Draw")
 
-    # Show in rows of 5
-    items = st.session_state["drawn_results"]
-    rows = math.ceil(len(items)/5)
+    items = st.session_state["current_draw"]
+    cols = st.columns(5, gap="medium")  # always 5 columns max
+    for c, (prize, number) in enumerate(items):
+        with cols[c]:
+            st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
 
-    for r in range(rows):
-        cols = st.columns(5, gap="medium")
-        for c, (prize, number) in enumerate(items[r*5:(r+1)*5]):
-            with cols[c]:
-                st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
-
-# USED NUMBERS (rows of 10)
+# USED NUMBERS (rows of 10, in order)
 if st.session_state["used_numbers"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")

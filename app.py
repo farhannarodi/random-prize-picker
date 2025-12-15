@@ -7,41 +7,53 @@ st.set_page_config(
 )
 
 st.title("🎉 Prize Draw Setup")
-st.caption("Set your number range and prize count")
+st.caption("Set your number range and prizes")
 
-with st.container():
-    col1, col2 = st.columns(2)
+# Number range
+col1, col2 = st.columns(2)
 
-    with col1:
-        start_range = st.number_input(
-            "Start of range",
-            min_value=1,
-            value=1
-        )
+with col1:
+    start_range = st.number_input(
+        "Start of range",
+        min_value=1,
+        value=1
+    )
 
-    with col2:
-        end_range = st.number_input(
-            "End of range",
-            min_value=start_range + 1,
-            value=50
-        )
+with col2:
+    end_range = st.number_input(
+        "End of range",
+        min_value=start_range + 1,
+        value=50
+    )
 
-prizes = st.slider(
+# Number of prizes
+prize_count = st.number_input(
     "🎁 Number of prizes",
     min_value=1,
     max_value=20,
     value=5
 )
 
-valid = prizes <= (end_range - start_range + 1)
+st.divider()
+st.subheader("🏷️ Prize Names")
+
+# Prize name inputs
+prize_names = []
+for i in range(prize_count):
+    name = st.text_input(
+        f"Prize {i + 1} name",
+        value=f"Prize {i + 1}"
+    )
+    prize_names.append(name)
+
+# Validation
+valid = prize_count <= (end_range - start_range + 1)
 
 if not valid:
-    st.error("❌ Number of prizes exceeds range size")
+    st.error("❌ Number of prizes exceeds available numbers")
 else:
-    st.success("✅ Ready to draw!")
-
     if st.button("🎲 Proceed to Draw", use_container_width=True):
         st.session_state["start"] = start_range
         st.session_state["end"] = end_range
-        st.session_state["prizes"] = prizes
+        st.session_state["prizes"] = prize_names
         st.switch_page("pages/2_🎁_Draw_Results.py")

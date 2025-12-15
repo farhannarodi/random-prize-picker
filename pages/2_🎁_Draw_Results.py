@@ -1,58 +1,143 @@
 import streamlit as st
+import random
+import math
 
 st.set_page_config(
-    page_title="Prize Draw Setup",
+    page_title="Draw Results",
     page_icon="🎁",
     layout="wide"
 )
 
-st.title("🎁 Prize Draw Setup")
+st.title("🎁 Prize Draw Results")
 
-# --- Number Range ---
-st.subheader("🔢 Number Range")
+# -----------------------
+# Session Validation
+# -----------------------
+required_keys = [
+    "available_numbers",
+    "available_prizes",
+    "original_numbers",
+    "original_prizes"
+]
 
+for key in required_keys:
+    if key not in st.session_state:
+        st.error("❌ Session not found. Please start from the setup page.")
+        st.stop()
+
+# Init draw state
+st.session_state.setdefault("used_pairs", [])
+st.session_state.setdefault("current_draw", [])
+
+# -----------------------
+# Controls
+# -----------------------
 col1, col2 = st.columns(2)
+
+# Draw Next Batch
 with col1:
-    start_number = st.number_input("Start Number", min_value=1, value=1)
+    if st.session_state["available_prizes"]:
+        if st.button("🎉 Draw Next Batch", use_container_width=True):
+
+            batch_size = min(5, len(st.session_state["available_prizes"]))
+            prizes = st.session_state["available_prizes"][:batch_size]
+            numbers = random.sample(
+                st.session_state["available_numbers"],
+                batch_size
+            )
+
+            st.session_state["current_draw"] = list(zip(prizes, numbers))
+
+            # Remove drawn items
+            st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
+            for prize, number in st.session_state["current_draw"]:
+                st.session_state["available_numbers"].remove(number)
+                st.session_state["used_pairs"].append((prize, number))
+
+            st.balloons()
+    else:
+        st.markdown(
+            """
+            <div style="
+                background:#E53935;
+                color:white;
+                padding:14px;
+                border-radius:8px;
+                text-align:center;
+                font-weight:bold;
+            ">
+                ❌ No More Prizes Left For This Draw
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# New Session
 with col2:
-    end_number = st.number_input("End Number", min_value=start_number + 1, value=50)
+    if st.button("🆕 New Session", use_container_width=True):
+        st.session_state["available_numbers"] = st.session_state["original_numbers"][:]
+        st.session_state["available_prizes"] = st.session_state["original_prizes"][:]
+        st.session_state["used_pairs"] = []
+        st.session_state["current_draw"] = []
+        st.rerun()
 
-# --- Prize Input ---
-st.subheader("🏆 Prize List (Up to 1,000 prizes)")
+# -----------------------
+# Session Info
+# -----------------------
+st.markdown("### 🧾 Session Info")
+st.markdown(f"**Remaining Prizes:** {len(st.session_state['available_prizes'])}")
 
-prize_input = st.text_area(
-    "Enter ONE prize per line",
-    height=300,
-    placeholder="Prize 1\nPrize 2\nPrize 3\n...\nUp to 1000 prizes"
-)
+# -----------------------
+# Card Renderer
+# -----------------------
+def render_card(title, value, color, font_size):
+    return f"""
+    <div style="
+        background:{color};
+        padding:18px;
+        border-radius:14px;
+        text-align:center;
+        color:white;
+        box-shadow:0 4px 10px rgba(0,0,0,0.15);
+        min-height:120px;
+        font-family:Segoe UI, sans-serif;
+        margin-bottom:12px;
+    ">
+        <div style="font-size:14px; opacity:0.85;">{title}</div>
+        <div style="font-size:{font_size}px; font-weight:bold;">{value}</div>
+    </div>
+    """
 
-prizes = [p.strip() for p in prize_input.split("\n") if p.strip()]
+# -----------------------
+# Current Draw (Max 5)
+# -----------------------
+if st.session_state["current_draw"]:
+    st.markdown("---")
+    st.subheader("🏆 Current Draw")
 
-if len(prizes) > 1000:
-    st.error("❌ Maximum 1,000 prizes allowed")
-    st.stop()
+    cols = st.columns(5)
+    for i, (prize, number) in enumerate(st.session_state["current_draw"]):
+        with cols[i]:
+            st.markdown(
+                render_card(prize, number, "#1E88E5", 34),
+                unsafe_allow_html=True
+            )
 
-# --- Start Session Button ---
-if st.button("🚀 Start Draw Session", use_container_width=True):
-    if not prizes:
-        st.error("Please enter at least one prize.")
-        st.stop()
+# -----------------------
+# Already Drawn (Rows of 10)
+# -----------------------
+if st.session_state["used_pairs"]:
+    st.markdown("---")
+    st.subheader("🚫 Numbers Already Drawn")
 
-    if (end_number - start_number + 1) < len(prizes):
-        st.error("Number range must be >= number of prizes.")
-        st.stop()
+    used = st.session_state["used_pairs"]
+    rows = math.ceil(len(used) / 10)
 
-    # Save ORIGINAL data
-    st.session_state["original_numbers"] = list(range(start_number, end_number + 1))
-    st.session_state["original_prizes"] = prizes.copy()
-
-    # Working copies
-    st.session_state["available_numbers"] = st.session_state["original_numbers"][:]
-    st.session_state["available_prizes"] = st.session_state["original_prizes"][:]
-
-    # Reset draw data
-    st.session_state["used_pairs"] = []
-    st.session_state["current_draw"] = []
-
-    st.success(f"✅ Session started with {len(prizes)} prizes!")
-    st.switch_page("pages/2_🎁_Draw_Results.py")
+    for r in range(rows):
+        cols = st.columns(10)
+        for c, (prize, number) in enumerate(used[r*10:(r+1)*10]):
+            with cols[c]:
+                st.markdown(
+                    render_card(prize, number, "#E53935", 20),
+                    unsafe_allow_html=True
+                )

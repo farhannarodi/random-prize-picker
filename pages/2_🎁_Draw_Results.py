@@ -9,16 +9,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize presenter mode flag
-if "presenter_mode" not in st.session_state:
-    st.session_state["presenter_mode"] = False
-
-# Auto-refresh in presenter mode
-if st.session_state["presenter_mode"]:
-    st.experimental_autorefresh(interval=5000, key="auto_refresh")
-
 st.title("🎁 Prize Draw Results")
 
+# Ensure session state keys exist
 required_keys = [
     "start", "end", "prizes",
     "available_numbers", "used_numbers",
@@ -34,16 +27,19 @@ end = st.session_state["end"]
 prize_names = st.session_state["prizes"]
 available = st.session_state["available_numbers"]
 
+# Session info
 st.markdown(f"""
-### 🧾 Session #{st.session_state["session_number"]}
-- **Range:** {start} – {end}
-- **Remaining numbers:** {len(available)}
+### 🧾 Session #{st.session_state['session_number']}
+**Range:** {start} – {end}  
+**Remaining numbers:** {len(available)}
 """)
 
-# Control buttons (only show in normal mode)
-if not st.session_state["presenter_mode"]:
-    col_top = st.columns(2)
-    with col_top[0]:
+# DRAW NUMBERS & NEW SESSION buttons
+col_top = st.columns([1,1])
+with col_top[0]:
+    if len(available) == 0:
+        st.warning("❌ No More Numbers Left for this draw.")
+    else:
         if st.button("🎉 Draw Numbers", use_container_width=True):
             if len(available) < len(prize_names):
                 st.error("❌ Not enough numbers left for this draw.")
@@ -53,94 +49,62 @@ if not st.session_state["presenter_mode"]:
                     available.remove(n)
                 st.session_state["used_numbers"].extend(drawn)
                 st.session_state["results"] = dict(zip(prize_names, drawn))
-                st.session_state["confetti"] = True
+                st.balloons()
 
-    with col_top[1]:
-        if st.button("🆕 New Session", use_container_width=True):
-            st.session_state["available_numbers"] = list(range(start, end + 1))
-            st.session_state["used_numbers"] = []
-            st.session_state["session_number"] += 1
-            st.session_state.pop("results", None)
-            st.session_state.pop("confetti", None)
-            st.rerun()
-
-    # Presenter mode toggle
-    if st.button("📺 Enter Presenter Mode", use_container_width=True):
-        st.session_state["presenter_mode"] = True
-        st.rerun()
-else:
-    # Exit presenter mode
-    if st.button("🔙 Exit Presenter Mode", use_container_width=True):
-        st.session_state["presenter_mode"] = False
+with col_top[1]:
+    if st.button("🆕 New Session", use_container_width=True):
+        st.session_state["available_numbers"] = list(range(start, end + 1))
+        st.session_state["used_numbers"] = []
+        st.session_state["session_number"] += 1
+        st.session_state.pop("results", None)
         st.rerun()
 
-# Trigger confetti only once per new draw
-if "confetti" in st.session_state and st.session_state["confetti"]:
-    st.balloons()
-    st.session_state["confetti"] = False
+# Function to render cards
+def render_card(title, value, color="#4CAF50", font_size=32):
+    return f"""
+    <div style="
+        background:{color};
+        padding:22px;
+        border-radius:16px;
+        text-align:center;
+        color:white;
+        box-shadow:0 4px 12px rgba(0,0,0,0.15);
+        min-height:140px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin-bottom:12px;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+    ">
+        <div style="font-size:16px; opacity:0.85; margin-bottom:8px;">{title}</div>
+        <div style="font-size:{font_size}px; font-weight:bold;">{value}</div>
+    </div>
+    """
 
-# 🏆 DRAW RESULTS (5 per row)
-if "results" in st.session_state:
-    st.divider()
+# DRAW RESULTS (5 per row)
+if "results" in st.session_state and st.session_state["results"]:
+    st.markdown("---")
     st.subheader("🏆 Draw Results")
 
     items = list(st.session_state["results"].items())
     rows = math.ceil(len(items) / 5)
 
     for r in range(rows):
-        cols = st.columns(5)
+        cols = st.columns(5, gap="medium")
         for c, (prize, number) in enumerate(items[r*5:(r+1)*5]):
             with cols[c]:
-                st.markdown(
-                    f"""
-                    <div style="
-                        background:#4CAF50;
-                        padding:24px;
-                        border-radius:16px;
-                        text-align:center;
-                        color:white;
-                        box-shadow:0 6px 12px rgba(0,0,0,0.25);
-                        min-height:140px;
-                        font-family:sans-serif;
-                    ">
-                        <div style="font-size:18px; opacity:0.9;">
-                            {prize}
-                        </div>
-                        <div style="font-size:36px; font-weight:bold;">
-                            {number}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
 
-# 🔴 USED NUMBERS (5 per row)
+# USED NUMBERS (5 per row, soft red)
 if st.session_state["used_numbers"]:
-    st.divider()
+    st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")
 
     used = sorted(st.session_state["used_numbers"])
     rows = math.ceil(len(used) / 5)
 
     for r in range(rows):
-        cols = st.columns(5)
+        cols = st.columns(5, gap="medium")
         for c, number in enumerate(used[r*5:(r+1)*5]):
             with cols[c]:
-                st.markdown(
-                    f"""
-                    <div style="
-                        background:#D32F2F;
-                        padding:18px;
-                        border-radius:12px;
-                        text-align:center;
-                        color:white;
-                        font-size:22px;
-                        font-weight:bold;
-                        box-shadow:0 4px 8px rgba(0,0,0,0.25);
-                        font-family:sans-serif;
-                    ">
-                        {number}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                st.markdown(render_card("", number, color="#E53935", font_size=24), unsafe_allow_html=True)

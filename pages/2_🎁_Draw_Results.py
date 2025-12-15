@@ -35,19 +35,21 @@ col_top = st.columns([1,1])
 with col_top[0]:
     if st.session_state["available_prizes"] and st.session_state["available_numbers"]:
         if st.button("🎉 Draw Next Batch", use_container_width=True):
-            # Draw up to 5 prizes
+            # Draw up to 5 prizes for this batch
             batch_size = min(5, len(st.session_state["available_prizes"]))
             prizes_to_draw = st.session_state["available_prizes"][:batch_size]
             numbers_to_draw = random.sample(st.session_state["available_numbers"], batch_size)
 
-            # Pair prizes with numbers
+            # Pair prizes with numbers for the current batch
             st.session_state["current_draw"] = list(zip(prizes_to_draw, numbers_to_draw))
 
-            # Remove drawn prizes from available and update used numbers
-            for prize, number in st.session_state["current_draw"]:
-                st.session_state["used_numbers"].append(number)
+            # Remove drawn prizes from available_prizes
+            st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
+
+            # Remove drawn numbers from available_numbers and add to used_numbers
+            for _, number in st.session_state["current_draw"]:
                 st.session_state["available_numbers"].remove(number)
-                st.session_state["available_prizes"].remove(prize)
+                st.session_state["used_numbers"].append(number)
 
             st.balloons()
     else:

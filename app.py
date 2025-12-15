@@ -11,12 +11,17 @@ st.title("🎁 Prize Draw Setup")
 # -----------------------
 # Number Range
 # -----------------------
-st.subheader("🔢 Number Range")
-col1, col2 = st.columns(2)
-with col1:
-    start_number = st.number_input("Start Number", min_value=1, value=1)
-with col2:
-    end_number = st.number_input("End Number", min_value=start_number + 1, value=50)
+st.subheader("🔢 Number Range (1 to N)")
+
+end_number = st.number_input(
+    "Enter the maximum number",
+    min_value=1,
+    value=50,
+    step=1
+)
+
+# Generate numbers automatically
+numbers = list(range(1, end_number + 1))
 
 # -----------------------
 # Prize Input (textarea for reliability)
@@ -57,12 +62,12 @@ if st.button("🚀 Start Draw Session", use_container_width=True):
     if len(prizes) == 0:
         st.stop()
 
-    if (end_number - start_number + 1) < len(prizes):
-        st.error("Number range must be >= number of prizes.")
+    if len(numbers) < len(prizes):
+        st.error("Number range must be greater than or equal to number of prizes.")
         st.stop()
 
     # Save originals
-    st.session_state["original_numbers"] = list(range(start_number, end_number + 1))
+    st.session_state["original_numbers"] = numbers[:]
     st.session_state["original_prizes"] = prizes.copy()
     st.session_state["available_numbers"] = st.session_state["original_numbers"][:]
     st.session_state["available_prizes"] = st.session_state["original_prizes"][:]

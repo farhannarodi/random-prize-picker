@@ -2,67 +2,53 @@ import streamlit as st
 
 st.set_page_config(
     page_title="Prize Draw Setup",
-    page_icon="🎉",
-    layout="centered"
+    page_icon="🎁",
+    layout="wide"
 )
 
-st.title("🎉 Prize Draw Setup")
-st.caption("Set your number range and prizes")
+st.title("🎁 Prize Draw Setup")
 
 # Number range
+st.subheader("🔢 Number Range")
+
 col1, col2 = st.columns(2)
-
 with col1:
-    start_range = st.number_input(
-        "Start of range",
-        min_value=1,
-        value=1
-    )
-
+    start_number = st.number_input("Start Number", min_value=1, value=1)
 with col2:
-    end_range = st.number_input(
-        "End of range",
-        min_value=start_range + 1,
-        value=50
-    )
+    end_number = st.number_input("End Number", min_value=start_number + 1, value=50)
 
-# Number of prizes
-prize_count = st.number_input(
-    "🎁 Number of prizes",
-    min_value=1,
-    max_value=20,
-    value=5
+# Prize input (NO numeric limits)
+st.subheader("🏆 Prize List (Up to 1,000 prizes)")
+
+prize_input = st.text_area(
+    "Enter ONE prize per line",
+    height=300,
+    placeholder="Prize 1\nPrize 2\nPrize 3\n..."
 )
 
-st.divider()
-st.subheader("🏷️ Prize Names")
+prizes = [p.strip() for p in prize_input.split("\n") if p.strip()]
 
-# Prize name inputs (THIS BLOCK FIXES THE ERROR)
-prize_names = []
-for i in range(int(prize_count)):
-    name = st.text_input(
-        f"Prize {i + 1} name",
-        value=f"Prize {i + 1}"
-    )
-    prize_names.append(name)
+if len(prizes) > 1000:
+    st.error("❌ Maximum 1,000 prizes allowed")
+    st.stop()
 
-# Validation
-valid = prize_count <= (end_range - start_range + 1)
+if st.button("🚀 Start Draw Session", use_container_width=True):
+    if not prizes:
+        st.error("Please enter at least one prize.")
+        st.stop()
 
-if not valid:
-    st.error("❌ Number of prizes exceeds available numbers")
-else:
-    if st.button("🎲 Start Session", use_container_width=True):
-        st.session_state.clear()
+    if (end_number - start_number + 1) < len(prizes):
+        st.error("Number range must be >= number of prizes.")
+        st.stop()
 
-        st.session_state["start"] = start_range
-        st.session_state["end"] = end_range
-        st.session_state["prizes"] = prize_names
+    st.session_state["original_numbers"] = list(range(start_number, end_number + 1))
+    st.session_state["original_prizes"] = prizes.copy()
 
-        st.session_state["available_numbers"] = list(
-            range(start_range, end_range + 1)
-        )
-        st.session_state["used_numbers"] = []
-        st.session_state["session_number"] = 1
+    st.session_state["available_numbers"] = st.session_state["original_numbers"][:]
+    st.session_state["available_prizes"] = st.session_state["original_prizes"][:]
 
-        st.switch_page("pages/2_🎁_Draw_Results.py")
+    st.session_state["used_pairs"] = []
+    st.session_state["current_draw"] = []
+
+    st.success(f"✅ Session started with {len(prizes)} prizes")
+    st.switch_page("pages/2_🎁_Draw_Results.py")

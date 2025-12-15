@@ -25,16 +25,16 @@ for key in required_keys:
         st.error("❌ Session not found. Please start from the setup page.")
         st.stop()
 
-# Init draw state
+# Init state
 st.session_state.setdefault("used_pairs", [])
 st.session_state.setdefault("current_draw", [])
+st.session_state.setdefault("confirm_return", None)
 
 # -----------------------
 # Controls
 # -----------------------
 col1, col2 = st.columns(2)
 
-# Draw Next Batch
 with col1:
     if st.session_state["available_prizes"]:
         if st.button("🎉 Draw Next Batch", use_container_width=True):
@@ -46,13 +46,18 @@ with col1:
                 batch_size
             )
 
-            st.session_state["current_draw"] = list(zip(prizes, numbers))
+            st.session_state["current_draw"] = []
 
-            # Remove drawn items
-            st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
-            for prize, number in st.session_state["current_draw"]:
+            for prize, number in zip(prizes, numbers):
+                st.session_state["current_draw"].append((prize, number))
+                st.session_state["used_pairs"].append({
+                    "prize": prize,
+                    "number": number,
+                    "returned": False
+                })
                 st.session_state["available_numbers"].remove(number)
-                st.session_state["used_pairs"].append((prize, number))
+
+            st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
 
             st.balloons()
     else:
@@ -72,13 +77,13 @@ with col1:
             unsafe_allow_html=True
         )
 
-# New Session
 with col2:
     if st.button("🆕 New Session", use_container_width=True):
         st.session_state["available_numbers"] = st.session_state["original_numbers"][:]
         st.session_state["available_prizes"] = st.session_state["original_prizes"][:]
         st.session_state["used_pairs"] = []
         st.session_state["current_draw"] = []
+        st.session_state["confirm_return"] = None
         st.rerun()
 
 # -----------------------
@@ -90,9 +95,10 @@ st.markdown(f"**Remaining Prizes:** {len(st.session_state['available_prizes'])}"
 # -----------------------
 # Card Renderer
 # -----------------------
-def render_card(title, value, color, font_size):
+def render_card(title, value, color, font_size, tooltip=None):
+    tip = f'title="{tooltip}"' if tooltip else ""
     return f"""
-    <div style="
+    <div {tip} style="
         background:{color};
         padding:18px;
         border-radius:14px;
@@ -109,7 +115,7 @@ def render_card(title, value, color, font_size):
     """
 
 # -----------------------
-# Current Draw (Max 5)
+# Current Draw
 # -----------------------
 if st.session_state["current_draw"]:
     st.markdown("---")
@@ -124,20 +130,70 @@ if st.session_state["current_draw"]:
             )
 
 # -----------------------
-# Already Drawn (Rows of 10)
+# Numbers Already Drawn (Sorted + Clickable)
 # -----------------------
 if st.session_state["used_pairs"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")
 
-    used = st.session_state["used_pairs"]
-    rows = math.ceil(len(used) / 10)
+    # Sort: active first, returned last
+    used_sorted = sorted(
+        st.session_state["used_pairs"],
+        key=lambda x: x["returned"]
+    )
+
+    rows = math.ceil(len(used_sorted) / 10)
 
     for r in range(rows):
         cols = st.columns(10)
-        for c, (prize, number) in enumerate(used[r*10:(r+1)*10]):
+        for c, item in enumerate(used_sorted[r*10:(r+1)*10]):
             with cols[c]:
-                st.markdown(
-                    render_card(prize, number, "#E53935", 20),
-                    unsafe_allow_html=True
-                )
+
+                prize = item["prize"]
+                number = item["number"]
+                returned = item["returned"]
+
+                if returned:
+                    st.markdown(
+                        render_card(
+                            prize,
+                            number,
+                            "#9E9E9E",
+                            20,
+                            tooltip="Prize Returned"
+                        ),
+                        unsafe_allow_html=True
+                    )
+                else:
+                    if st.button(
+                        f"{prize}\n{number}",
+                        key=f"select_{r}_{c}",
+                        use_container_width=True
+                    ):
+                        st.session_state["confirm_return"] = item
+                        st.rerun()
+
+# -----------------------
+# Confirmation Modal
+# -----------------------
+if st.session_state["confirm_return"]:
+    item = st.session_state["confirm_return"]
+
+    st.markdown("---")
+    st.warning(
+        f"⚠️ Return prize **{item['prize']}** (Number {item['number']}) back to the prize pool?"
+    )
+
+    col_yes, col_no = st.columns(2)
+
+    with col_yes:
+        if st.button("✅ Yes, Return Prize", use_container_width=True):
+            st.session_state["available_prizes"].append(item["prize"])
+            item["returned"] = True
+            st.session_state["confirm_return"] = None
+            st.rerun()
+
+    with col_no:
+        if st.button("❌ Cancel", use_container_width=True):
+            st.session_state["confirm_return"] = None
+            st.rerun()

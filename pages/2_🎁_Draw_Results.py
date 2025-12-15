@@ -30,7 +30,7 @@ st.markdown(f"""
 - **Remaining numbers:** {len(available)}
 """)
 
-# 🎉 DRAW BUTTON (always generates NEW results)
+# 🎉 DRAW NUMBERS
 if st.button("🎉 Draw Numbers", use_container_width=True):
     if len(available) < len(prize_names):
         st.error("❌ Not enough numbers left for this draw.")
@@ -43,7 +43,7 @@ if st.button("🎉 Draw Numbers", use_container_width=True):
         st.session_state["used_numbers"].extend(drawn)
         st.session_state["results"] = dict(zip(prize_names, drawn))
 
-# 🏆 DISPLAY RESULTS
+# 🏆 SHOW RESULTS
 if "results" in st.session_state:
     st.divider()
     st.subheader("🏆 Draw Results")
@@ -78,13 +78,13 @@ st.divider()
 
 col1, col2 = st.columns(2)
 
-# 🔄 NEW DRAW (same session, new numbers)
+# 🔄 NEW DRAW (same session)
 with col1:
     if st.button("🔄 New Draw (Same Session)", use_container_width=True):
         st.session_state.pop("results", None)
-        st.experimental_rerun()
+        st.rerun()
 
-# 🆕 NEW SESSION (full reset)
+# 🆕 NEW SESSION
 with col2:
     if st.button("🆕 New Session", use_container_width=True):
         st.session_state["available_numbers"] = list(
@@ -93,4 +93,4 @@ with col2:
         st.session_state["used_numbers"] = []
         st.session_state["session_number"] += 1
         st.session_state.pop("results", None)
-        st.experimental_rerun()
+        st.rerun()

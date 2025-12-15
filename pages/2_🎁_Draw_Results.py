@@ -1,5 +1,6 @@
 import streamlit as st
 import random
+import math
 
 st.set_page_config(
     page_title="Draw Results",
@@ -43,54 +44,78 @@ if st.button("🎉 Draw Numbers", use_container_width=True):
         st.session_state["used_numbers"].extend(drawn)
         st.session_state["results"] = dict(zip(prize_names, drawn))
 
-# 🏆 SHOW RESULTS
+# 🏆 DRAW RESULTS (5 PER ROW)
 if "results" in st.session_state:
     st.divider()
     st.subheader("🏆 Draw Results")
 
-    for prize, number in st.session_state["results"].items():
-        st.markdown(
-            f"""
-            <div style="
-                background:#4CAF50;
-                padding:20px;
-                border-radius:14px;
-                margin-bottom:15px;
-                color:white;
-                box-shadow:0 6px 12px rgba(0,0,0,0.25);
-            ">
-                <div style="font-size:18px;">{prize}</div>
-                <div style="font-size:32px; font-weight:bold;">
-                    {number}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    items = list(st.session_state["results"].items())
+    rows = math.ceil(len(items) / 5)
 
-# 📜 USED NUMBERS
+    for r in range(rows):
+        cols = st.columns(5)
+        for c, (prize, number) in enumerate(items[r*5:(r+1)*5]):
+            with cols[c]:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background:#4CAF50;
+                        padding:18px;
+                        border-radius:14px;
+                        text-align:center;
+                        color:white;
+                        box-shadow:0 6px 12px rgba(0,0,0,0.25);
+                        min-height:120px;
+                    ">
+                        <div style="font-size:16px; opacity:0.9;">
+                            {prize}
+                        </div>
+                        <div style="font-size:32px; font-weight:bold;">
+                            {number}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+# 🔴 USED NUMBERS (RED BOXES, 5 PER ROW)
 if st.session_state["used_numbers"]:
     st.divider()
-    st.subheader("📜 Numbers Already Drawn")
-    st.write(sorted(st.session_state["used_numbers"]))
+    st.subheader("🚫 Numbers Already Drawn")
+
+    used = sorted(st.session_state["used_numbers"])
+    rows = math.ceil(len(used) / 5)
+
+    for r in range(rows):
+        cols = st.columns(5)
+        for c, number in enumerate(used[r*5:(r+1)*5]):
+            with cols[c]:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background:#D32F2F;
+                        padding:14px;
+                        border-radius:10px;
+                        text-align:center;
+                        color:white;
+                        font-size:20px;
+                        font-weight:bold;
+                        box-shadow:0 4px 8px rgba(0,0,0,0.25);
+                    ">
+                        {number}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
 st.divider()
 
-col1, col2 = st.columns(2)
-
-# 🔄 NEW DRAW (same session)
-with col1:
-    if st.button("🔄 New Draw (Same Session)", use_container_width=True):
-        st.session_state.pop("results", None)
-        st.rerun()
-
 # 🆕 NEW SESSION
-with col2:
-    if st.button("🆕 New Session", use_container_width=True):
-        st.session_state["available_numbers"] = list(
-            range(start, end + 1)
-        )
-        st.session_state["used_numbers"] = []
-        st.session_state["session_number"] += 1
-        st.session_state.pop("results", None)
-        st.rerun()
+if st.button("🆕 New Session", use_container_width=True):
+    st.session_state["available_numbers"] = list(
+        range(start, end + 1)
+    )
+    st.session_state["used_numbers"] = []
+    st.session_state["session_number"] += 1
+    st.session_state.pop("results", None)
+    st.rerun()

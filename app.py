@@ -12,65 +12,52 @@ st.title("🎁 Prize Draw Setup")
 # Number Range
 # -----------------------
 st.subheader("🔢 Number Range")
-
 col1, col2 = st.columns(2)
 with col1:
-    start_number = st.number_input(
-        "Start Number",
-        min_value=1,
-        value=1
-    )
-
+    start_number = st.number_input("Start Number", min_value=1, value=1)
 with col2:
-    end_number = st.number_input(
-        "End Number",
-        min_value=start_number + 1,
-        value=50
-    )
+    end_number = st.number_input("End Number", min_value=start_number + 1, value=50)
 
 # -----------------------
-# Prize Setup
+# Prize Input (single textarea)
 # -----------------------
-st.subheader("🏆 Prize Setup")
+st.subheader("🏆 Prize List (Up to 1,000 prizes)")
 
-prize_count = st.number_input(
-    "Number of Prizes",
-    min_value=1,
-    max_value=1000,   # ✅ Increased limit
-    value=5,
-    step=1
+prize_input = st.text_area(
+    "Enter ONE prize per line",
+    height=300,
+    placeholder="Prize 1\nPrize 2\nPrize 3\n..."
 )
 
-st.markdown("### Enter Prize Names")
+# Parse prizes
+prizes = [p.strip() for p in prize_input.split("\n") if p.strip()]
 
-prizes = []
-for i in range(prize_count):
-    prize = st.text_input(
-        f"Prize {i + 1}",
-        key=f"prize_{i}"
-    )
-    prizes.append(prize if prize.strip() else f"Prize {i + 1}")
+if len(prizes) == 0:
+    st.warning("Please enter at least one prize.")
+elif len(prizes) > 1000:
+    st.error("Maximum 1,000 prizes allowed.")
 
 # -----------------------
 # Start Session
 # -----------------------
 if st.button("🚀 Start Draw Session", use_container_width=True):
+    if len(prizes) == 0:
+        st.stop()
 
-    if (end_number - start_number + 1) < prize_count:
-        st.error("❌ Number range must be greater than or equal to number of prizes.")
+    if (end_number - start_number + 1) < len(prizes):
+        st.error("Number range must be >= number of prizes.")
         st.stop()
 
     # Save originals
     st.session_state["original_numbers"] = list(range(start_number, end_number + 1))
     st.session_state["original_prizes"] = prizes.copy()
-
-    # Working copies
     st.session_state["available_numbers"] = st.session_state["original_numbers"][:]
     st.session_state["available_prizes"] = st.session_state["original_prizes"][:]
 
-    # Reset draw data
+    # Reset draw state
     st.session_state["used_pairs"] = []
     st.session_state["current_draw"] = []
+    st.session_state["confirm_return"] = None
 
-    st.success(f"✅ Session started with {prize_count} prizes")
+    st.success(f"✅ Session started with {len(prizes)} prizes")
     st.switch_page("pages/2_🎁_Draw_Results.py")

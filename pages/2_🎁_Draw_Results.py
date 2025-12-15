@@ -11,7 +11,7 @@ st.set_page_config(
 
 st.title("🎁 Prize Draw Results")
 
-# --- Initialize session state (only once) ---
+# --- Initialize session state only once ---
 if "available_numbers" not in st.session_state:
     st.session_state["available_numbers"] = list(range(1, 51))  # Example: 50 numbers
 if "available_prizes" not in st.session_state:
@@ -21,29 +21,22 @@ if "used_numbers" not in st.session_state:
 if "current_draw" not in st.session_state:
     st.session_state["current_draw"] = []  # Stores only the current batch
 
-# --- Session Info ---
-remaining_prizes = len(st.session_state["available_prizes"])
-st.markdown(f"""
-### 🧾 Session Info
-- **Remaining Prizes:** {remaining_prizes}
-""")
-
 # --- Buttons ---
-col_top = st.columns([1,1])
+col_top = st.columns([1, 1])
 
 # Left column: Draw Next Batch
 with col_top[0]:
     if st.session_state["available_prizes"] and st.session_state["available_numbers"]:
         if st.button("🎉 Draw Next Batch", use_container_width=True):
-            # Draw up to 5 prizes
+            # Draw up to 5 prizes for this batch
             batch_size = min(5, len(st.session_state["available_prizes"]))
             prizes_to_draw = st.session_state["available_prizes"][:batch_size]
             numbers_to_draw = random.sample(st.session_state["available_numbers"], batch_size)
 
-            # Pair prizes with numbers for this batch
+            # Pair prizes with numbers for current draw
             st.session_state["current_draw"] = list(zip(prizes_to_draw, numbers_to_draw))
 
-            # Update session state: remove drawn prizes and numbers
+            # Remove drawn prizes and numbers from available lists
             st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
             for _, number in st.session_state["current_draw"]:
                 st.session_state["available_numbers"].remove(number)
@@ -77,7 +70,14 @@ with col_top[1]:
         st.session_state["current_draw"] = []
         st.rerun()
 
-# --- Function to render prize/number cards ---
+# --- Session Info (calculated AFTER draw logic) ---
+remaining_prizes = len(st.session_state["available_prizes"])
+st.markdown(f"""
+### 🧾 Session Info
+- **Remaining Prizes:** {remaining_prizes}
+""")
+
+# --- Function to render cards ---
 def render_card(title, value, color="#1E88E5", font_size=32):
     return f"""
     <div style="
@@ -105,7 +105,7 @@ if st.session_state["current_draw"]:
     st.subheader("🏆 Current Draw")
 
     items = st.session_state["current_draw"]
-    cols = st.columns(5, gap="medium")  # Always max 5 columns
+    cols = st.columns(5, gap="medium")
     for c, (prize, number) in enumerate(items):
         with cols[c]:
             st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)

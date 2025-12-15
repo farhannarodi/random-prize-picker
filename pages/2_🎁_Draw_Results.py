@@ -22,6 +22,28 @@ st.session_state.setdefault("current_draw", [])
 st.session_state.setdefault("confirm_return", None)
 
 # -----------------------
+# Helper: render card
+# -----------------------
+def render_card(title, value, color, font_size, tooltip=None):
+    tip = f'title="{tooltip}"' if tooltip else ""
+    return f"""
+    <div {tip} style="
+        background:{color};
+        padding:18px;
+        border-radius:14px;
+        text-align:center;
+        color:white;
+        box-shadow:0 4px 10px rgba(0,0,0,0.15);
+        min-height:120px;
+        font-family:Segoe UI, sans-serif;
+        margin-bottom:12px;
+    ">
+        <div style="font-size:14px; opacity:0.85;">{title}</div>
+        <div style="font-size:{font_size}px; font-weight:bold;">{value}</div>
+    </div>
+    """
+
+# -----------------------
 # Controls
 # -----------------------
 col1, col2 = st.columns(2)
@@ -38,7 +60,7 @@ with col1:
                 if item["returned"] and len(batch_prizes) < batch_size:
                     batch_prizes.append(item)
                     item["returned"] = False
-                    item["number"] = None  # assign new number
+                    item["number"] = None  # will assign new number
 
             # 2️⃣ Fill remaining batch from available prizes
             remaining_slots = batch_size - len(batch_prizes)
@@ -47,7 +69,7 @@ with col1:
                     prize_name = st.session_state["available_prizes"].pop(0)
                     batch_prizes.append({"prize": prize_name, "number": None, "returned": False})
 
-            # 3️⃣ Assign random numbers
+            # 3️⃣ Assign random numbers from available_numbers
             if len(st.session_state["available_numbers"]) < len(batch_prizes):
                 st.error("Not enough numbers left for this batch.")
                 st.stop()
@@ -56,6 +78,9 @@ with col1:
             for item, num in zip(batch_prizes, batch_numbers):
                 item["number"] = num
                 st.session_state["available_numbers"].remove(num)
+                # Add to used_pairs if not already in list
+                if item not in st.session_state["used_pairs"]:
+                    st.session_state["used_pairs"].append(item)
 
             st.session_state["current_draw"] = batch_prizes
             st.balloons()
@@ -81,28 +106,6 @@ with col2:
 # -----------------------
 remaining_prizes = len(st.session_state["available_prizes"]) + sum(p["returned"] for p in st.session_state["used_pairs"])
 st.markdown(f"### 🧾 Session Info\n**Remaining Prizes:** {remaining_prizes}")
-
-# -----------------------
-# Helper: render card
-# -----------------------
-def render_card(title, value, color, font_size, tooltip=None):
-    tip = f'title="{tooltip}"' if tooltip else ""
-    return f"""
-    <div {tip} style="
-        background:{color};
-        padding:18px;
-        border-radius:14px;
-        text-align:center;
-        color:white;
-        box-shadow:0 4px 10px rgba(0,0,0,0.15);
-        min-height:120px;
-        font-family:Segoe UI, sans-serif;
-        margin-bottom:12px;
-    ">
-        <div style="font-size:14px; opacity:0.85;">{title}</div>
-        <div style="font-size:{font_size}px; font-weight:bold;">{value}</div>
-    </div>
-    """
 
 # -----------------------
 # Current Draw (max 5)

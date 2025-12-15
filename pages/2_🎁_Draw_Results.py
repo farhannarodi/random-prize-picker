@@ -25,7 +25,7 @@ for key in required_keys:
         st.error("❌ Session not found. Please start from the setup page.")
         st.stop()
 
-# Initialize state
+# Init state
 st.session_state.setdefault("used_pairs", [])
 st.session_state.setdefault("current_draw", [])
 st.session_state.setdefault("confirm_return", None)
@@ -58,6 +58,7 @@ with col1:
                 st.session_state["available_numbers"].remove(number)
 
             st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
+
             st.balloons()
     else:
         st.markdown(
@@ -88,9 +89,8 @@ with col2:
 # -----------------------
 # Session Info
 # -----------------------
-remaining_prizes = len(st.session_state["available_prizes"])
 st.markdown("### 🧾 Session Info")
-st.markdown(f"**Remaining Prizes:** {remaining_prizes}")
+st.markdown(f"**Remaining Prizes:** {len(st.session_state['available_prizes'])}")
 
 # -----------------------
 # Card Renderer
@@ -115,7 +115,7 @@ def render_card(title, value, color, font_size, tooltip=None):
     """
 
 # -----------------------
-# Current Draw (Max 5)
+# Current Draw
 # -----------------------
 if st.session_state["current_draw"]:
     st.markdown("---")
@@ -130,7 +130,7 @@ if st.session_state["current_draw"]:
             )
 
 # -----------------------
-# Numbers Already Drawn (Styled + Clickable + Sorted)
+# Numbers Already Drawn (Sorted + Clickable)
 # -----------------------
 if st.session_state["used_pairs"]:
     st.markdown("---")
@@ -147,25 +147,31 @@ if st.session_state["used_pairs"]:
     for r in range(rows):
         cols = st.columns(10)
         for c, item in enumerate(used_sorted[r*10:(r+1)*10]):
-            prize = item["prize"]
-            number = item["number"]
-            returned = item["returned"]
-
-            color = "#9E9E9E" if returned else "#1E88E5"
-            tooltip = "Prize Returned" if returned else None
-
             with cols[c]:
-                # Use form to simulate clickable card
-                form_key = f"return_form_{r}_{c}"
-                with st.form(form_key):
-                    html = render_card(prize, number, color, 20, tooltip=tooltip)
-                    st.markdown(html, unsafe_allow_html=True)
 
-                    if not returned:
-                        # Invisible submit button over card
-                        if st.form_submit_button("Return"):
-                            st.session_state["confirm_return"] = item
-                            st.rerun()
+                prize = item["prize"]
+                number = item["number"]
+                returned = item["returned"]
+
+                if returned:
+                    st.markdown(
+                        render_card(
+                            prize,
+                            number,
+                            "#9E9E9E",
+                            20,
+                            tooltip="Prize Returned"
+                        ),
+                        unsafe_allow_html=True
+                    )
+                else:
+                    if st.button(
+                        f"{prize}\n{number}",
+                        key=f"select_{r}_{c}",
+                        use_container_width=True
+                    ):
+                        st.session_state["confirm_return"] = item
+                        st.rerun()
 
 # -----------------------
 # Confirmation Modal

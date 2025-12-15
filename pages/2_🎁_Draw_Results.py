@@ -20,7 +20,6 @@ for key in required_keys:
 st.session_state.setdefault("used_pairs", [])
 st.session_state.setdefault("current_draw", [])
 st.session_state.setdefault("confirm_return", None)
-st.session_state.setdefault("returned_prizes", [])
 
 # -----------------------
 # Controls
@@ -28,37 +27,37 @@ st.session_state.setdefault("returned_prizes", [])
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.session_state["available_prizes"] or st.session_state["returned_prizes"]:
+    if st.session_state["available_prizes"] or any(p["returned"] for p in st.session_state["used_pairs"]):
         if st.button("🎉 Draw Next Batch", use_container_width=True):
 
-            batch_size = 5  # max 5 per draw
+            batch_size = 5
+            batch_prizes = []
 
-            # 1️⃣ Take returned prizes first
-            returned_batch = st.session_state["returned_prizes"][:batch_size]
-            st.session_state["returned_prizes"] = st.session_state["returned_prizes"][len(returned_batch):]
+            # 1️⃣ Pull returned prizes first
+            for item in st.session_state["used_pairs"]:
+                if item["returned"] and len(batch_prizes) < batch_size:
+                    batch_prizes.append(item)
+                    item["returned"] = False
+                    item["number"] = None  # assign new number
 
-            # 2️⃣ Fill remaining batch with new available prizes
-            remaining_slots = batch_size - len(returned_batch)
-            new_prizes = st.session_state["available_prizes"][:remaining_slots]
-            st.session_state["available_prizes"] = st.session_state["available_prizes"][remaining_slots:]
+            # 2️⃣ Fill remaining batch from available prizes
+            remaining_slots = batch_size - len(batch_prizes)
+            for _ in range(remaining_slots):
+                if st.session_state["available_prizes"]:
+                    prize_name = st.session_state["available_prizes"].pop(0)
+                    batch_prizes.append({"prize": prize_name, "number": None, "returned": False})
 
-            # 3️⃣ Combine for this batch
-            batch_prizes = returned_batch + new_prizes
-
-            # 4️⃣ Draw random numbers for all prizes in batch
+            # 3️⃣ Assign random numbers
             if len(st.session_state["available_numbers"]) < len(batch_prizes):
                 st.error("Not enough numbers left for this batch.")
                 st.stop()
 
             batch_numbers = random.sample(st.session_state["available_numbers"], len(batch_prizes))
+            for item, num in zip(batch_prizes, batch_numbers):
+                item["number"] = num
+                st.session_state["available_numbers"].remove(num)
 
-            # 5️⃣ Update current draw and used_pairs
-            st.session_state["current_draw"] = []
-            for prize, number in zip(batch_prizes, batch_numbers):
-                st.session_state["current_draw"].append((prize, number))
-                st.session_state["used_pairs"].append({"prize": prize, "number": number, "returned": False})
-                st.session_state["available_numbers"].remove(number)
-
+            st.session_state["current_draw"] = batch_prizes
             st.balloons()
     else:
         st.markdown(
@@ -74,14 +73,13 @@ with col2:
         st.session_state["available_prizes"] = st.session_state["original_prizes"][:]
         st.session_state["used_pairs"] = []
         st.session_state["current_draw"] = []
-        st.session_state["returned_prizes"] = []
         st.session_state["confirm_return"] = None
         st.rerun()
 
 # -----------------------
 # Session Info
 # -----------------------
-remaining_prizes = len(st.session_state["available_prizes"]) + len(st.session_state["returned_prizes"])
+remaining_prizes = len(st.session_state["available_prizes"]) + sum(p["returned"] for p in st.session_state["used_pairs"])
 st.markdown(f"### 🧾 Session Info\n**Remaining Prizes:** {remaining_prizes}")
 
 # -----------------------
@@ -114,7 +112,9 @@ if st.session_state["current_draw"]:
     st.subheader("🏆 Current Draw")
 
     cols = st.columns(5)
-    for i, (prize, number) in enumerate(st.session_state["current_draw"]):
+    for i, item in enumerate(st.session_state["current_draw"]):
+        prize = item["prize"]
+        number = item["number"]
         with cols[i]:
             st.markdown(render_card(prize, number, "#1E88E5", 34), unsafe_allow_html=True)
 
@@ -155,7 +155,6 @@ if st.session_state["confirm_return"]:
     col_yes, col_no = st.columns(2)
     with col_yes:
         if st.button("✅ Yes", use_container_width=True):
-            st.session_state["returned_prizes"].append(item["prize"])
             item["returned"] = True
             st.session_state["confirm_return"] = None
             st.rerun()

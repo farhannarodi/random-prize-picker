@@ -115,7 +115,7 @@ def render_card(title, value, color, font_size, tooltip=None):
     """
 
 # -----------------------
-# Current Draw (Green Cards)
+# Current Draw (Max 5)
 # -----------------------
 if st.session_state["current_draw"]:
     st.markdown("---")
@@ -125,12 +125,12 @@ if st.session_state["current_draw"]:
     for i, (prize, number) in enumerate(st.session_state["current_draw"]):
         with cols[i]:
             st.markdown(
-                render_card(prize, number, "#43A047", 34),  # green for current draw
+                render_card(prize, number, "#1E88E5", 34),
                 unsafe_allow_html=True
             )
 
 # -----------------------
-# Numbers Already Drawn (Blue / Grey)
+# Numbers Already Drawn (Styled + Clickable + Sorted)
 # -----------------------
 if st.session_state["used_pairs"]:
     st.markdown("---")
@@ -151,7 +151,7 @@ if st.session_state["used_pairs"]:
             number = item["number"]
             returned = item["returned"]
 
-            color = "#9E9E9E" if returned else "#1E88E5"  # grey for returned, blue for active
+            color = "#9E9E9E" if returned else "#1E88E5"
             tooltip = "Prize Returned" if returned else None
 
             with cols[c]:

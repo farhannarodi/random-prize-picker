@@ -36,9 +36,26 @@ st.markdown(f"""
 
 # DRAW NUMBERS & NEW SESSION buttons
 col_top = st.columns([1,1])
+
+# Left column: Draw / No More Numbers
 with col_top[0]:
     if len(available) == 0:
-        st.warning("❌ No More Numbers Left for this draw.")
+        st.markdown(
+            """
+            <div style="
+                background:#E53935;
+                color:white;
+                padding:14px;
+                border-radius:8px;
+                text-align:center;
+                font-weight:bold;
+                font-size:16px;
+            ">
+                ❌ No More Numbers Left for this draw
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     else:
         if st.button("🎉 Draw Numbers", use_container_width=True):
             if len(available) < len(prize_names):
@@ -51,6 +68,7 @@ with col_top[0]:
                 st.session_state["results"] = dict(zip(prize_names, drawn))
                 st.balloons()
 
+# Right column: New Session button
 with col_top[1]:
     if st.button("🆕 New Session", use_container_width=True):
         st.session_state["available_numbers"] = list(range(start, end + 1))
@@ -69,7 +87,7 @@ def render_card(title, value, color="#4CAF50", font_size=32):
         text-align:center;
         color:white;
         box-shadow:0 4px 12px rgba(0,0,0,0.15);
-        min-height:140px;
+        min-height:130px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         margin-bottom:12px;
         display:flex;
@@ -95,16 +113,16 @@ if "results" in st.session_state and st.session_state["results"]:
             with cols[c]:
                 st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
 
-# USED NUMBERS (5 per row, soft red)
+# USED NUMBERS (10 per row, soft red)
 if st.session_state["used_numbers"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")
 
     used = sorted(st.session_state["used_numbers"])
-    rows = math.ceil(len(used) / 5)
+    rows = math.ceil(len(used) / 10)
 
     for r in range(rows):
-        cols = st.columns(5, gap="medium")
-        for c, number in enumerate(used[r*5:(r+1)*5]):
+        cols = st.columns(10, gap="small")
+        for c, number in enumerate(used[r*10:(r+1)*10]):
             with cols[c]:
-                st.markdown(render_card("", number, color="#E53935", font_size=24), unsafe_allow_html=True)
+                st.markdown(render_card("", number, color="#E53935", font_size=20), unsafe_allow_html=True)

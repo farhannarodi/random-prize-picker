@@ -21,14 +21,17 @@ if "used_numbers" not in st.session_state:
 if "current_draw" not in st.session_state:
     st.session_state["current_draw"] = []  # List of tuples (prize, number)
 
-# Session info
+# --- Session Info ---
+remaining_prizes = len(st.session_state.get("available_prizes", []))
 st.markdown(f"""
 ### 🧾 Session Info
-- **Remaining Prizes:** {len(st.session_state['available_prizes'])}
+- **Remaining Prizes:** {remaining_prizes}
 """)
 
-# Buttons
+# --- Buttons ---
 col_top = st.columns([1,1])
+
+# Left column: Draw Next Batch / No More Prizes
 with col_top[0]:
     if st.session_state["available_prizes"] and st.session_state["available_numbers"]:
         if st.button("🎉 Draw Next Batch", use_container_width=True):
@@ -37,10 +40,10 @@ with col_top[0]:
             prizes_to_draw = st.session_state["available_prizes"][:batch_size]
             numbers_to_draw = random.sample(st.session_state["available_numbers"], batch_size)
 
-            # Pair prizes with numbers and store current draw
+            # Pair prizes with numbers
             st.session_state["current_draw"] = list(zip(prizes_to_draw, numbers_to_draw))
 
-            # Update used numbers and remove from available
+            # Remove drawn prizes from available and update used numbers
             for prize, number in st.session_state["current_draw"]:
                 st.session_state["used_numbers"].append(number)
                 st.session_state["available_numbers"].remove(number)
@@ -65,6 +68,7 @@ with col_top[0]:
             unsafe_allow_html=True
         )
 
+# Right column: New Session
 with col_top[1]:
     if st.button("🆕 New Session", use_container_width=True):
         st.session_state["available_numbers"] = list(range(1, 51))
@@ -73,7 +77,7 @@ with col_top[1]:
         st.session_state["current_draw"] = []
         st.rerun()
 
-# Function to render cards
+# --- Function to Render Cards ---
 def render_card(title, value, color="#1E88E5", font_size=32):
     return f"""
     <div style="
@@ -95,18 +99,18 @@ def render_card(title, value, color="#1E88E5", font_size=32):
     </div>
     """
 
-# DRAW RESULTS (current draw only, max 5 per row)
+# --- Current Draw Results (5 per row) ---
 if st.session_state["current_draw"]:
     st.markdown("---")
     st.subheader("🏆 Current Draw")
 
     items = st.session_state["current_draw"]
-    cols = st.columns(5, gap="medium")  # always 5 columns max
+    cols = st.columns(5, gap="medium")  # max 5 columns per row
     for c, (prize, number) in enumerate(items):
         with cols[c]:
             st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
 
-# USED NUMBERS (rows of 10, in order)
+# --- Used Numbers (Rows of 10) ---
 if st.session_state["used_numbers"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")

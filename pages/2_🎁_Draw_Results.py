@@ -7,51 +7,54 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🎁 Draw Results")
+st.title("🎁 Prize Draw Results")
 
-if "start" not in st.session_state:
+if "prizes" not in st.session_state:
     st.warning("Please configure the draw first.")
     st.stop()
 
 start = st.session_state["start"]
 end = st.session_state["end"]
-prizes = st.session_state["prizes"]
+prize_names = st.session_state["prizes"]
 
 st.markdown(f"""
-### 🎯 Draw Information
+### 🎯 Draw Details
 - **Range:** {start} – {end}
-- **Prizes:** {prizes}
+- **Prizes:** {len(prize_names)}
 """)
 
 if st.button("🎉 Draw Numbers", use_container_width=True):
-    st.session_state["winners"] = random.sample(
-        range(start, end + 1), prizes
+    numbers = random.sample(
+        range(start, end + 1),
+        len(prize_names)
     )
+    st.session_state["results"] = dict(zip(prize_names, numbers))
 
-if "winners" in st.session_state:
+if "results" in st.session_state:
     st.divider()
-    st.subheader("🏆 Winning Numbers")
+    st.subheader("🏆 Winners")
 
-    cols = st.columns(5)
-    for i, num in enumerate(st.session_state["winners"]):
-        with cols[i % 5]:
-            st.markdown(
-                f"""
-                <div style="
-                    background:#4CAF50;
-                    padding:22px;
-                    border-radius:14px;
-                    text-align:center;
-                    color:white;
-                    font-size:26px;
-                    font-weight:bold;
-                    box-shadow:0 6px 12px rgba(0,0,0,0.25);
-                ">
-                    {num}
+    for prize, number in st.session_state["results"].items():
+        st.markdown(
+            f"""
+            <div style="
+                background:#1f77b4;
+                padding:20px;
+                border-radius:14px;
+                margin-bottom:15px;
+                color:white;
+                box-shadow:0 6px 12px rgba(0,0,0,0.25);
+            ">
+                <div style="font-size:18px; opacity:0.9;">
+                    {prize}
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                <div style="font-size:32px; font-weight:bold;">
+                    {number}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 st.divider()
 

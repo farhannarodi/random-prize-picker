@@ -13,13 +13,13 @@ st.title("🎁 Prize Draw Results")
 
 # --- Initialize session state only once ---
 if "available_numbers" not in st.session_state:
-    st.session_state["available_numbers"] = list(range(1, 51))  # Example: 50 numbers
+    st.session_state["available_numbers"] = list(range(1, 51))
 if "available_prizes" not in st.session_state:
     st.session_state["available_prizes"] = ["Prize " + str(i) for i in range(1, 21)]
-if "used_numbers" not in st.session_state:
-    st.session_state["used_numbers"] = []
+if "used_pairs" not in st.session_state:
+    st.session_state["used_pairs"] = []  # Stores tuples (prize, number)
 if "current_draw" not in st.session_state:
-    st.session_state["current_draw"] = []  # Stores only the current batch
+    st.session_state["current_draw"] = []
 
 # --- Buttons ---
 col_top = st.columns([1, 1])
@@ -28,19 +28,18 @@ col_top = st.columns([1, 1])
 with col_top[0]:
     if st.session_state["available_prizes"] and st.session_state["available_numbers"]:
         if st.button("🎉 Draw Next Batch", use_container_width=True):
-            # Draw up to 5 prizes for this batch
             batch_size = min(5, len(st.session_state["available_prizes"]))
             prizes_to_draw = st.session_state["available_prizes"][:batch_size]
             numbers_to_draw = random.sample(st.session_state["available_numbers"], batch_size)
 
-            # Pair prizes with numbers for current draw
+            # Current draw batch
             st.session_state["current_draw"] = list(zip(prizes_to_draw, numbers_to_draw))
 
-            # Remove drawn prizes and numbers from available lists
+            # Remove drawn prizes and numbers
             st.session_state["available_prizes"] = st.session_state["available_prizes"][batch_size:]
-            for _, number in st.session_state["current_draw"]:
+            for prize, number in st.session_state["current_draw"]:
                 st.session_state["available_numbers"].remove(number)
-                st.session_state["used_numbers"].append(number)
+                st.session_state["used_pairs"].append((prize, number))  # save pair
 
             st.balloons()
     else:
@@ -66,11 +65,11 @@ with col_top[1]:
     if st.button("🆕 New Session", use_container_width=True):
         st.session_state["available_numbers"] = list(range(1, 51))
         st.session_state["available_prizes"] = ["Prize " + str(i) for i in range(1, 21)]
-        st.session_state["used_numbers"] = []
+        st.session_state["used_pairs"] = []
         st.session_state["current_draw"] = []
         st.rerun()
 
-# --- Session Info (calculated AFTER draw logic) ---
+# --- Session Info (after draw) ---
 remaining_prizes = len(st.session_state["available_prizes"])
 st.markdown(f"""
 ### 🧾 Session Info
@@ -110,15 +109,15 @@ if st.session_state["current_draw"]:
         with cols[c]:
             st.markdown(render_card(prize, number, color="#1E88E5", font_size=34), unsafe_allow_html=True)
 
-# --- Used Numbers (rows of 10) ---
-if st.session_state["used_numbers"]:
+# --- Used Numbers (rows of 10) with prize-number pairs ---
+if st.session_state["used_pairs"]:
     st.markdown("---")
     st.subheader("🚫 Numbers Already Drawn")
 
-    used = st.session_state["used_numbers"]
+    used = st.session_state["used_pairs"]
     rows = math.ceil(len(used)/10)
     for r in range(rows):
         cols = st.columns(10, gap="small")
-        for c, number in enumerate(used[r*10:(r+1)*10]):
+        for c, (prize, number) in enumerate(used[r*10:(r+1)*10]):
             with cols[c]:
-                st.markdown(render_card("", number, color="#E53935", font_size=20), unsafe_allow_html=True)
+                st.markdown(render_card(prize, number, color="#E53935", font_size=20), unsafe_allow_html=True)

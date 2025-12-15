@@ -8,7 +8,7 @@ st.set_page_config(
 
 st.title("🎁 Prize Draw Setup")
 
-# Number range
+# --- Number Range ---
 st.subheader("🔢 Number Range")
 
 col1, col2 = st.columns(2)
@@ -17,28 +17,28 @@ with col1:
 with col2:
     end_number = st.number_input("End Number", min_value=start_number + 1, value=50)
 
-# Prize input (NO numeric limits)
-st.subheader("🏆 Prize List (Up to 1,000 prizes)")
+# --- Prize Count (LIMIT INCREASED HERE) ---
+st.subheader("🏆 Prize Setup")
 
-prize_input = st.text_area(
-    "Enter ONE prize per line",
-    height=300,
-    placeholder="Prize 1\nPrize 2\nPrize 3\n..."
+prize_count = st.number_input(
+    "Number of Prizes",
+    min_value=1,
+    max_value=1000,   # ✅ increased from 20 to 1000
+    value=5,
+    step=1
 )
 
-prizes = [p.strip() for p in prize_input.split("\n") if p.strip()]
+st.markdown("### Enter Prize Names")
 
-if len(prizes) > 1000:
-    st.error("❌ Maximum 1,000 prizes allowed")
-    st.stop()
+prizes = []
+for i in range(prize_count):
+    prize = st.text_input(f"Prize {i + 1}", key=f"prize_{i}")
+    prizes.append(prize if prize else f"Prize {i + 1}")
 
+# --- Start Session ---
 if st.button("🚀 Start Draw Session", use_container_width=True):
-    if not prizes:
-        st.error("Please enter at least one prize.")
-        st.stop()
-
-    if (end_number - start_number + 1) < len(prizes):
-        st.error("Number range must be >= number of prizes.")
+    if (end_number - start_number + 1) < prize_count:
+        st.error("Number range must be greater than or equal to number of prizes.")
         st.stop()
 
     st.session_state["original_numbers"] = list(range(start_number, end_number + 1))
@@ -50,5 +50,5 @@ if st.button("🚀 Start Draw Session", use_container_width=True):
     st.session_state["used_pairs"] = []
     st.session_state["current_draw"] = []
 
-    st.success(f"✅ Session started with {len(prizes)} prizes")
+    st.success(f"✅ Session started with {prize_count} prizes")
     st.switch_page("pages/2_🎁_Draw_Results.py")

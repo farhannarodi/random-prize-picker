@@ -19,7 +19,7 @@ with col2:
     end_number = st.number_input("End Number", min_value=start_number + 1, value=50)
 
 # -----------------------
-# Prize Input (single textarea)
+# Prize Input (textarea for reliability)
 # -----------------------
 st.subheader("🏆 Prize List (Up to 1,000 prizes)")
 
@@ -36,6 +36,19 @@ if len(prizes) == 0:
     st.warning("Please enter at least one prize.")
 elif len(prizes) > 1000:
     st.error("Maximum 1,000 prizes allowed.")
+
+# -----------------------
+# Display in “old style” multiple input look
+# -----------------------
+st.markdown("### Prize Preview")
+cols_per_row = 5
+rows = (len(prizes) + cols_per_row - 1) // cols_per_row
+
+for r in range(rows):
+    cols = st.columns(cols_per_row)
+    for c, prize in enumerate(prizes[r*cols_per_row:(r+1)*cols_per_row]):
+        with cols[c]:
+            st.text_input(f"Prize {r*cols_per_row+c+1}", value=prize, disabled=True)
 
 # -----------------------
 # Start Session

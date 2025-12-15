@@ -1,7 +1,6 @@
 import streamlit as st
 import random
 import math
-from streamlit_autorefresh import st_autorefresh
 
 # Fullscreen / Wide layout
 st.set_page_config(
@@ -16,7 +15,7 @@ if "presenter_mode" not in st.session_state:
 
 # Auto-refresh in presenter mode
 if st.session_state["presenter_mode"]:
-    st_autorefresh(interval=5000, key="auto_refresh")  # every 5 seconds
+    st.experimental_autorefresh(interval=5000, key="auto_refresh")
 
 st.title("🎁 Prize Draw Results")
 
